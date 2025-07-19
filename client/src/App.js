@@ -19,13 +19,18 @@ function App() {
   const [activeDoc, setActiveDoc] = useState(null);
   const [activeContent, setActiveContent] = useState('');
   const contentRef = useRef();
+  const [docError, setDocError] = useState('');
+  const [docLoading, setDocLoading] = useState(false);
 
   // Fetch documents on mount (if authenticated)
   useEffect(() => {
     if (token) {
+      setDocLoading(true);
+      setDocError('');
       axios.get('/documents', { headers: { Authorization: `Bearer ${token}` } })
         .then(res => setDocuments(res.data))
-        .catch(err => console.error(err));
+        .catch(err => setDocError(err.response?.data?.error || 'Failed to load documents'))
+        .finally(() => setDocLoading(false));
     }
   }, [token]);
 
@@ -78,13 +83,14 @@ function App() {
   // Handle form submit
   const handleSubmit = async (e) => {
     e.preventDefault();
+    setDocError('');
     try {
       const res = await axios.post('/documents', { title, content }, { headers: { Authorization: `Bearer ${token}` } });
       setDocuments([...documents, res.data]);
       setTitle('');
       setContent('');
     } catch (err) {
-      alert('Error creating document');
+      setDocError(err.response?.data?.error || 'Error creating document');
     }
   };
 
@@ -160,33 +166,38 @@ function App() {
         />
         <button type="submit">Add Document</button>
       </form>
-      <div style={{ display: 'flex', gap: '2rem' }}>
-        <ul style={{ flex: 1 }}>
-          {documents.map(doc => (
-            <li key={doc._id} style={{ marginBottom: '1rem', borderBottom: '1px solid #ccc', paddingBottom: '1rem', cursor: 'pointer', background: activeDoc && activeDoc._id === doc._id ? '#f0f0f0' : 'white' }}
-                onClick={() => setActiveDoc(doc)}>
-              <strong>{doc.title}</strong>
-              <p style={{ fontSize: '0.9em', color: '#555' }}>{doc.content.slice(0, 40)}...</p>
-            </li>
-          ))}
-        </ul>
-        <div style={{ flex: 2 }}>
-          {activeDoc ? (
-            <div>
-              <h2>{activeDoc.title}</h2>
-              <textarea
-                ref={contentRef}
-                value={activeContent}
-                onChange={handleContentChange}
-                onBlur={handleSave}
-                style={{ width: '100%', height: 200, padding: '0.5rem' }}
-              />
-            </div>
-          ) : (
-            <div style={{ color: '#888' }}>Select a document to edit in real-time.</div>
-          )}
+      {docError && <div style={{ color: 'red', marginBottom: 16 }}>{docError}</div>}
+      {docLoading ? (
+        <div>Loading documents...</div>
+      ) : (
+        <div style={{ display: 'flex', gap: '2rem' }}>
+          <ul style={{ flex: 1 }}>
+            {documents.map(doc => (
+              <li key={doc._id} style={{ marginBottom: '1rem', borderBottom: '1px solid #ccc', paddingBottom: '1rem', cursor: 'pointer', background: activeDoc && activeDoc._id === doc._id ? '#f0f0f0' : 'white' }}
+                  onClick={() => setActiveDoc(doc)}>
+                <strong>{doc.title}</strong>
+                <p style={{ fontSize: '0.9em', color: '#555' }}>{doc.content.slice(0, 40)}...</p>
+              </li>
+            ))}
+          </ul>
+          <div style={{ flex: 2 }}>
+            {activeDoc ? (
+              <div>
+                <h2>{activeDoc.title}</h2>
+                <textarea
+                  ref={contentRef}
+                  value={activeContent}
+                  onChange={handleContentChange}
+                  onBlur={handleSave}
+                  style={{ width: '100%', height: 200, padding: '0.5rem' }}
+                />
+              </div>
+            ) : (
+              <div style={{ color: '#888' }}>Select a document to edit in real-time.</div>
+            )}
+          </div>
         </div>
-      </div>
+      )}
     </div>
   );
 }
