@@ -1,20 +1,9 @@
 import React, { useEffect, useState, useRef } from 'react';
 import axios from 'axios';
 import { io } from 'socket.io-client';
+import './App.css';
 
 const socket = io();
-
-const COLORS = {
-  bg: '#f6f8fa',
-  card: '#fff',
-  accent: '#2563eb',
-  accentLight: '#3b82f6',
-  border: '#e5e7eb',
-  text: '#222',
-  muted: '#6b7280',
-  error: '#ef4444',
-  success: '#22c55e',
-};
 
 function App() {
   // Auth state
@@ -122,7 +111,6 @@ function App() {
       setSaveStatus('Saving...');
       try {
         await axios.put(`/documents/${activeDoc._id}`, { title: activeDoc.title, content: activeContent }, { headers: { Authorization: `Bearer ${token}` } });
-        // Update the document in the documents list
         setDocuments(docs =>
           docs.map(d =>
             d._id === activeDoc._id ? { ...d, content: activeContent } : d
@@ -151,23 +139,18 @@ function App() {
     }
   };
 
-  // Responsive card style
-  const cardStyle = {
-    background: COLORS.card,
-    borderRadius: 16,
-    boxShadow: '0 2px 16px 0 rgba(0,0,0,0.06)',
-    padding: 32,
-    maxWidth: 400,
-    margin: '4rem auto',
-    border: `1px solid ${COLORS.border}`,
-    color: COLORS.text,
+  // Helper for avatar
+  const getAvatar = (title) => {
+    if (!title) return '?';
+    return title.trim().charAt(0).toUpperCase();
   };
 
   if (!token) {
     return (
-      <div style={{ minHeight: '100vh', background: COLORS.bg, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-        <div style={cardStyle}>
-          <h2 style={{ marginBottom: 24, color: COLORS.accent }}>{authMode === 'register' ? 'Register' : 'Login'}</h2>
+      <div style={{ minHeight: '100vh', background: 'none' }}>
+        <div className="header-bar">TypeTogether</div>
+        <div className="card">
+          <h2 style={{ marginBottom: 24, color: '#2563eb' }}>{authMode === 'register' ? 'Register' : 'Login'}</h2>
           <form onSubmit={handleAuth}>
             <input
               type="text"
@@ -175,7 +158,6 @@ function App() {
               value={username}
               onChange={e => setUsername(e.target.value)}
               required
-              style={{ width: '100%', marginBottom: 16, padding: 12, borderRadius: 8, border: `1px solid ${COLORS.border}`, fontSize: 16 }}
             />
             <input
               type="password"
@@ -183,91 +165,87 @@ function App() {
               value={password}
               onChange={e => setPassword(e.target.value)}
               required
-              style={{ width: '100%', marginBottom: 16, padding: 12, borderRadius: 8, border: `1px solid ${COLORS.border}`, fontSize: 16 }}
             />
-            <button type="submit" style={{ width: '100%', marginBottom: 12, padding: 12, borderRadius: 8, background: COLORS.accent, color: '#fff', border: 'none', fontWeight: 600, fontSize: 16, cursor: 'pointer', transition: 'background 0.2s' }}
-              onMouseOver={e => e.target.style.background = COLORS.accentLight}
-              onMouseOut={e => e.target.style.background = COLORS.accent}
-            >
+            <button type="submit" className="btn-accent" style={{ width: '100%', marginBottom: 12 }}>
               {authMode === 'register' ? 'Register' : 'Login'}
             </button>
           </form>
-          <button onClick={() => setAuthMode(authMode === 'register' ? 'login' : 'register')} style={{ width: '100%', background: 'none', border: 'none', color: COLORS.accent, fontWeight: 500, cursor: 'pointer', marginBottom: 12 }}>
+          <button onClick={() => setAuthMode(authMode === 'register' ? 'login' : 'register')} style={{ width: '100%', background: 'none', border: 'none', color: '#2563eb', fontWeight: 500, cursor: 'pointer', marginBottom: 12 }}>
             {authMode === 'register' ? 'Already have an account? Login' : "Don't have an account? Register"}
           </button>
-          {authError && <div style={{ color: authError.includes('successful') ? COLORS.success : COLORS.error, marginTop: 12, textAlign: 'center' }}>{authError}</div>}
+          {authError && <div style={{ color: authError.includes('successful') ? '#22c55e' : '#ef4444', marginTop: 12, textAlign: 'center' }}>{authError}</div>}
         </div>
       </div>
     );
   }
 
   return (
-    <div style={{ minHeight: '100vh', background: COLORS.bg, padding: 0 }}>
+    <div style={{ minHeight: '100vh', background: 'none' }}>
+      <div className="header-bar" style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '1.2rem 2rem' }}>
+        <span>TypeTogether</span>
+        <button onClick={handleLogout} className="btn-danger" style={{ fontSize: 15, padding: '8px 20px' }}>Logout</button>
+      </div>
       <div style={{ maxWidth: 900, margin: '0 auto', padding: '2rem 0' }}>
-        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 32 }}>
-          <h1 style={{ color: COLORS.accent, fontWeight: 700, fontSize: 32 }}>TypeTogether</h1>
-          <button onClick={handleLogout} style={{ background: COLORS.error, color: '#fff', border: 'none', borderRadius: 8, padding: '8px 20px', fontWeight: 600, cursor: 'pointer', fontSize: 16 }}>Logout</button>
-        </div>
-        <div style={{ display: 'flex', gap: '2rem', flexWrap: 'wrap' }}>
+        <div className="main-flex" style={{ display: 'flex', gap: '2rem', flexWrap: 'wrap' }}>
           <div style={{ flex: 1, minWidth: 260 }}>
-            <form onSubmit={handleSubmit} style={{ marginBottom: 24, background: COLORS.card, borderRadius: 12, boxShadow: '0 1px 6px 0 rgba(0,0,0,0.04)', padding: 20, border: `1px solid ${COLORS.border}` }}>
-              <input
-                type="text"
-                placeholder="Title"
-                value={title}
-                onChange={e => setTitle(e.target.value)}
-                required
-                style={{ width: '100%', marginBottom: 12, padding: 10, borderRadius: 8, border: `1px solid ${COLORS.border}`, fontSize: 15 }}
-              />
-              <textarea
-                placeholder="Content"
-                value={content}
-                onChange={e => setContent(e.target.value)}
-                style={{ width: '100%', marginBottom: 12, padding: 10, borderRadius: 8, border: `1px solid ${COLORS.border}`, fontSize: 15, minHeight: 60 }}
-              />
-              <button type="submit" style={{ width: '100%', padding: 10, borderRadius: 8, background: COLORS.accent, color: '#fff', border: 'none', fontWeight: 600, fontSize: 15, cursor: 'pointer', transition: 'background 0.2s' }}
-                onMouseOver={e => e.target.style.background = COLORS.accentLight}
-                onMouseOut={e => e.target.style.background = COLORS.accent}
-              >Add Document</button>
-            </form>
-            {docError && <div style={{ color: COLORS.error, marginBottom: 16 }}>{docError}</div>}
-            {docLoading ? (
-              <div style={{ color: COLORS.muted }}>Loading documents...</div>
-            ) : (
-              <ul style={{ listStyle: 'none', padding: 0 }}>
-                {documents.map(doc => (
-                  <li key={doc._id} style={{ marginBottom: 12, borderRadius: 8, border: `1px solid ${COLORS.border}`, background: activeDoc && activeDoc._id === doc._id ? COLORS.accentLight : COLORS.card, boxShadow: activeDoc && activeDoc._id === doc._id ? '0 2px 8px 0 rgba(59,130,246,0.08)' : 'none', padding: 12, cursor: 'pointer', transition: 'background 0.2s', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}
-                      onClick={e => { if (e.target.tagName !== 'BUTTON') setActiveDoc(doc); }}>
-                    <div style={{ flex: 1 }}>
-                      <strong style={{ color: COLORS.text }}>{doc.title}</strong>
-                      <p style={{ fontSize: '0.95em', color: COLORS.muted, margin: 0 }}>{doc.content.slice(0, 40)}{doc.content.length > 40 ? '...' : ''}</p>
-                    </div>
-                    <button
-                      onClick={e => { e.stopPropagation(); handleDelete(doc._id); }}
-                      style={{ background: COLORS.error, color: '#fff', border: 'none', borderRadius: 6, padding: '6px 12px', fontWeight: 500, fontSize: 13, cursor: 'pointer', marginLeft: 10 }}
-                    >Delete</button>
-                  </li>
-                ))}
-              </ul>
-            )}
+            <div className="card" style={{ margin: 0, marginBottom: 24 }}>
+              <form onSubmit={handleSubmit}>
+                <input
+                  type="text"
+                  placeholder="Title"
+                  value={title}
+                  onChange={e => setTitle(e.target.value)}
+                  required
+                />
+                <textarea
+                  placeholder="Content"
+                  value={content}
+                  onChange={e => setContent(e.target.value)}
+                  style={{ minHeight: 60 }}
+                />
+                <button type="submit" className="btn-accent" style={{ width: '100%' }}>Add Document</button>
+              </form>
+              {docError && <div style={{ color: '#ef4444', marginBottom: 16 }}>{docError}</div>}
+              {docLoading ? (
+                <div style={{ color: '#6b7280', display: 'flex', alignItems: 'center' }}><span className="spinner" />Loading documents...</div>
+              ) : (
+                <ul className="doc-list">
+                  {documents.map(doc => (
+                    <li key={doc._id} className={`doc-list-item${activeDoc && activeDoc._id === doc._id ? ' selected' : ''}`}
+                        onClick={e => { if (e.target.tagName !== 'BUTTON') setActiveDoc(doc); }}>
+                      <span className="doc-avatar">{getAvatar(doc.title)}</span>
+                      <div style={{ flex: 1 }}>
+                        <strong style={{ color: '#222' }}>{doc.title}</strong>
+                        <p style={{ fontSize: '0.95em', color: '#6b7280', margin: 0 }}>{doc.content.slice(0, 40)}{doc.content.length > 40 ? '...' : ''}</p>
+                      </div>
+                      <button
+                        onClick={e => { e.stopPropagation(); handleDelete(doc._id); }}
+                        className="btn-danger"
+                        style={{ marginLeft: 10 }}
+                      >Delete</button>
+                    </li>
+                  ))}
+                </ul>
+              )}
+            </div>
           </div>
           <div style={{ flex: 2, minWidth: 320 }}>
             {activeDoc ? (
-              <div style={{ background: COLORS.card, borderRadius: 12, boxShadow: '0 1px 6px 0 rgba(0,0,0,0.04)', padding: 24, border: `1px solid ${COLORS.border}` }}>
-                <h2 style={{ color: COLORS.accent, fontWeight: 600, marginBottom: 16 }}>{activeDoc.title}</h2>
+              <div className="card" style={{ margin: 0 }}>
+                <h2 style={{ color: '#2563eb', fontWeight: 600, marginBottom: 16 }}>{activeDoc.title}</h2>
                 <textarea
                   ref={contentRef}
                   value={activeContent}
                   onChange={handleContentChange}
-                  style={{ width: '100%', height: 220, padding: 12, borderRadius: 8, border: `1px solid ${COLORS.border}`, fontSize: 16, background: COLORS.bg, color: COLORS.text, resize: 'vertical', marginBottom: 12 }}
+                  style={{ width: '100%', height: 220, marginBottom: 12 }}
                 />
-                <button onClick={handleSave} style={{ background: COLORS.accent, color: '#fff', border: 'none', borderRadius: 8, padding: '10px 24px', fontWeight: 600, fontSize: 15, cursor: 'pointer', marginRight: 12 }}>
+                <button onClick={handleSave} className="btn-accent" style={{ marginRight: 12 }}>
                   Save Changes
                 </button>
-                {saveStatus && <span style={{ color: saveStatus === 'Saved!' ? COLORS.success : saveStatus === 'Saving...' ? COLORS.muted : COLORS.error, marginLeft: 8 }}>{saveStatus}</span>}
+                {saveStatus && <span className="save-status" style={{ color: saveStatus === 'Saved!' ? '#22c55e' : saveStatus === 'Saving...' ? '#6b7280' : '#ef4444' }}>{saveStatus}</span>}
               </div>
             ) : (
-              <div style={{ color: COLORS.muted, fontSize: 18, textAlign: 'center', marginTop: 60 }}>Select a document to edit in real-time.</div>
+              <div style={{ color: '#6b7280', fontSize: 18, textAlign: 'center', marginTop: 60 }}>Select a document to edit in real-time.</div>
             )}
           </div>
         </div>
