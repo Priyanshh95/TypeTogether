@@ -16,5 +16,8 @@
   "bugs": {
     "url": "https://github.com/Priyanshh95/TypeTogether/issues"
   },
-  "homepage": "https://github.com/Priyanshh95/TypeTogether#readme"
+  "homepage": "https://github.com/Priyanshh95/TypeTogether#readme",
+  "dependencies": {
+    "socket.io": "^4.8.1"
+  }
 }

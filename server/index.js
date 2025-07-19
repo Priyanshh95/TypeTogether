@@ -11,6 +11,8 @@ mongoose.connect(process.env.MONGODB_URI, {
 const express = require('express');
 const cors = require('cors');
 const Document = require('./models/Document');
+const http = require('http');
+const { Server } = require('socket.io');
 
 const app = express();
 const PORT = 5000;
@@ -44,6 +46,36 @@ app.get('/documents', async (req, res) => {
   }
 });
 
-app.listen(PORT, () => {
+const server = http.createServer(app);
+const io = new Server(server, {
+  cors: {
+    origin: '*',
+    methods: ['GET', 'POST']
+  }
+});
+
+io.on('connection', (socket) => {
+  console.log('A user connected:', socket.id);
+
+  socket.on('join-document', (docId) => {
+    socket.join(docId);
+  });
+
+  socket.on('send-changes', async ({ docId, content }) => {
+    socket.to(docId).emit('receive-changes', content);
+    // Persist changes to MongoDB
+    try {
+      await Document.findByIdAndUpdate(docId, { content, updatedAt: Date.now() });
+    } catch (err) {
+      console.error('Error saving real-time changes:', err);
+    }
+  });
+
+  socket.on('disconnect', () => {
+    console.log('A user disconnected:', socket.id);
+  });
+});
+
+server.listen(PORT, () => {
   console.log(`Server is running on port ${PORT}`);
 }); 
