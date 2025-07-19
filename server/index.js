@@ -44,7 +44,7 @@ function authMiddleware(req, res, next) {
 app.post('/documents', authMiddleware, async (req, res) => {
   try {
     const { title, content } = req.body;
-    const doc = new Document({ title, content });
+    const doc = new Document({ title, content, user: req.user.userId });
     await doc.save();
     res.status(201).json(doc);
   } catch (err) {
@@ -55,7 +55,7 @@ app.post('/documents', authMiddleware, async (req, res) => {
 // Get all documents
 app.get('/documents', authMiddleware, async (req, res) => {
   try {
-    const docs = await Document.find();
+    const docs = await Document.find({ user: req.user.userId });
     res.json(docs);
   } catch (err) {
     res.status(500).json({ error: err.message });
