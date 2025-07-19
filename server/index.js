@@ -63,6 +63,33 @@ app.get('/documents', authMiddleware, async (req, res) => {
   }
 });
 
+// Delete a document by ID
+app.delete('/documents/:id', authMiddleware, async (req, res) => {
+  try {
+    const doc = await Document.findOneAndDelete({ _id: req.params.id, user: req.user.userId });
+    if (!doc) return res.status(404).json({ error: 'Document not found or not authorized' });
+    res.json({ message: 'Document deleted' });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// Update a document by ID
+app.put('/documents/:id', authMiddleware, async (req, res) => {
+  try {
+    console.log('Update request:', req.params.id, req.user.userId);
+    const doc = await Document.findOneAndUpdate(
+      { _id: req.params.id, user: req.user.userId },
+      { title: req.body.title, content: req.body.content, updatedAt: Date.now() },
+      { new: true }
+    );
+    if (!doc) return res.status(404).json({ error: 'Document not found or not authorized' });
+    res.json(doc);
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
 // Register endpoint
 app.post('/auth/register', async (req, res) => {
   try {
