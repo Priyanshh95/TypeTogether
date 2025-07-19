@@ -5,6 +5,14 @@ import { io } from 'socket.io-client';
 const socket = io();
 
 function App() {
+  // Auth state
+  const [authMode, setAuthMode] = useState('login');
+  const [username, setUsername] = useState('');
+  const [password, setPassword] = useState('');
+  const [token, setToken] = useState(localStorage.getItem('token') || '');
+  const [authError, setAuthError] = useState('');
+
+  // Document state
   const [documents, setDocuments] = useState([]);
   const [title, setTitle] = useState('');
   const [content, setContent] = useState('');
@@ -12,12 +20,14 @@ function App() {
   const [activeContent, setActiveContent] = useState('');
   const contentRef = useRef();
 
-  // Fetch documents on mount
+  // Fetch documents on mount (if authenticated)
   useEffect(() => {
-    axios.get('/documents')
-      .then(res => setDocuments(res.data))
-      .catch(err => console.error(err));
-  }, []);
+    if (token) {
+      axios.get('/documents', { headers: { Authorization: `Bearer ${token}` } })
+        .then(res => setDocuments(res.data))
+        .catch(err => console.error(err));
+    }
+  }, [token]);
 
   // Join document room when activeDoc changes
   useEffect(() => {
@@ -37,11 +47,39 @@ function App() {
     };
   }, []);
 
+  // Handle registration/login
+  const handleAuth = async (e) => {
+    e.preventDefault();
+    setAuthError('');
+    try {
+      if (authMode === 'register') {
+        await axios.post('/auth/register', { username, password });
+        setAuthMode('login');
+        setAuthError('Registration successful! Please log in.');
+      } else {
+        const res = await axios.post('/auth/login', { username, password });
+        setToken(res.data.token);
+        localStorage.setItem('token', res.data.token);
+      }
+    } catch (err) {
+      setAuthError(err.response?.data?.error || 'Authentication failed');
+    }
+  };
+
+  // Handle logout
+  const handleLogout = () => {
+    setToken('');
+    localStorage.removeItem('token');
+    setDocuments([]);
+    setActiveDoc(null);
+    setActiveContent('');
+  };
+
   // Handle form submit
   const handleSubmit = async (e) => {
     e.preventDefault();
     try {
-      const res = await axios.post('/documents', { title, content });
+      const res = await axios.post('/documents', { title, content }, { headers: { Authorization: `Bearer ${token}` } });
       setDocuments([...documents, res.data]);
       setTitle('');
       setContent('');
@@ -62,13 +100,49 @@ function App() {
   // Save changes to DB (optional: on blur)
   const handleSave = async () => {
     if (activeDoc) {
-      await axios.post(`/documents`, { title: activeDoc.title, content: activeContent });
+      await axios.post(`/documents`, { title: activeDoc.title, content: activeContent }, { headers: { Authorization: `Bearer ${token}` } });
     }
   };
 
+  if (!token) {
+    return (
+      <div style={{ maxWidth: 400, margin: '4rem auto', padding: 24, border: '1px solid #ccc', borderRadius: 8 }}>
+        <h2>{authMode === 'register' ? 'Register' : 'Login'}</h2>
+        <form onSubmit={handleAuth}>
+          <input
+            type="text"
+            placeholder="Username"
+            value={username}
+            onChange={e => setUsername(e.target.value)}
+            required
+            style={{ width: '100%', marginBottom: 12, padding: 8 }}
+          />
+          <input
+            type="password"
+            placeholder="Password"
+            value={password}
+            onChange={e => setPassword(e.target.value)}
+            required
+            style={{ width: '100%', marginBottom: 12, padding: 8 }}
+          />
+          <button type="submit" style={{ width: '100%', marginBottom: 12 }}>
+            {authMode === 'register' ? 'Register' : 'Login'}
+          </button>
+        </form>
+        <button onClick={() => setAuthMode(authMode === 'register' ? 'login' : 'register')} style={{ width: '100%' }}>
+          {authMode === 'register' ? 'Already have an account? Login' : "Don't have an account? Register"}
+        </button>
+        {authError && <div style={{ color: authError.includes('successful') ? 'green' : 'red', marginTop: 12 }}>{authError}</div>}
+      </div>
+    );
+  }
+
   return (
     <div style={{ maxWidth: 800, margin: '2rem auto' }}>
-      <h1>Documents</h1>
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+        <h1>Documents</h1>
+        <button onClick={handleLogout}>Logout</button>
+      </div>
       <form onSubmit={handleSubmit} style={{ marginBottom: '2rem' }}>
         <input
           type="text"
