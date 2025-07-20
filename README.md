@@ -77,5 +77,4 @@ TypeTogether/
 - You can use MongoDB Atlas by updating `MONGODB_URI` in your `.env` file.
 - The UI is easily customizable via `client/src/App.css`.
 
-## License
-MIT
+
